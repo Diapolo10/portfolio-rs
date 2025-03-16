@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use poem::{Result, Route, Server, get, handler, listener::TcpListener, web::Path};
+use poem::{
+    Result, Route, Server, endpoint::StaticFilesEndpoint, get, handler, listener::TcpListener,
+    web::Path,
+};
 
 mod parse_portfolio;
 
@@ -24,6 +27,16 @@ fn portfolio() -> String {
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let app = Route::new()
+        .nest(
+            "/",
+            StaticFilesEndpoint::new(
+                [env!("CARGO_MANIFEST_DIR"), "src", "static"]
+                    .iter()
+                    .collect::<PathBuf>(),
+            )
+            .show_files_listing()
+            .index_file("index.html"),
+        )
         .at("/hello/:name", get(hello))
         .at("/portfolio", get(portfolio));
     Server::new(TcpListener::bind("0.0.0.0:3000"))
